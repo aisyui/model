@@ -51,7 +51,7 @@ module.exports = merge({
   module: {
     rules: [{
       test: /\.ts$/,
-      loader: 'ts-loader'
+      loader: 'awesome-typescript-loader'
     }, {
       test: /\.css$/,
       use: [{

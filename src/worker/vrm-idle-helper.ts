@@ -1,23 +1,25 @@
-import { VRM, VRMHumanBoneName as BoneNames, VRMExpressionPresetName, VRMLookAt } from '@pixiv/three-vrm';
+import { VRM, VRMLookAtHead, VRMSchema } from '@pixiv/three-vrm';
 import { Euler, MathUtils, Matrix4, Quaternion, Vector3 } from 'three';
 import { vrmUnloadObservable } from './model-manager';
 import { camera } from './scene/camera';
 import { clampByRadian } from '../utils/three-helpers';
 
-const LERP_SCALE = 30;
+const BoneNames = VRMSchema.HumanoidBoneName;
+
+const LERP_SCALE = 6;
 const HEAD_ROTATE_DAMP = 1;
-const HEAD_CLAMP_ANGLE = MathUtils.degToRad(60);
+const HEAD_CLAMP_ANGLE = 60 * MathUtils.DEG2RAD;
 const LOOK_CAMERA_THRESHOLD = 0;
-const ARM_IDLE_ANGLE = MathUtils.degToRad(75);
-const FINGER_IDLE_ANGLE = MathUtils.degToRad(15);
-const THUMB_IDLE_ANGLE = MathUtils.degToRad(30);
-const SHOULDER_BREATH_ANGLE = MathUtils.degToRad(-5);
+const ARM_IDLE_ANGLE = 75 * MathUtils.DEG2RAD;
+const FINGER_IDLE_ANGLE = 15 * MathUtils.DEG2RAD;
+const THUMB_IDLE_ANGLE = 30 * MathUtils.DEG2RAD;
+const SHOULDER_BREATH_ANGLE = -5 * MathUtils.DEG2RAD;
 const MIN_BLINK_DELAY = 0.5;
 const MAX_BLINK_DEALY = 10;
 const BLINK_DURATION = 0.2;
 const BREATH_CYCLE = 2;
 
-const lookAts = new WeakMap<VRM, VRMLookAt>();
+const lookAts = new WeakMap<VRM, VRMLookAtHead>();
 const totalTimes = new WeakMap<VRM, number>();
 const blinkDelays = new WeakMap<VRM, number>();
 
@@ -28,7 +30,7 @@ const rotation3 = new Quaternion();
 const position = new Vector3();
 const position2 = new Vector3();
 const matrix = new Matrix4();
-const euler = new Euler(0, 0, 0, VRMLookAt.EULER_ORDER);
+const euler = new Euler();
 const leftArmIdleRotation = getQuaternionFromAngle(0, 0, ARM_IDLE_ANGLE);
 const leftFingerIdleRotation = getQuaternionFromAngle(0, 0, FINGER_IDLE_ANGLE);
 const leftThumbIdleRotation = getQuaternionFromAngle(0, THUMB_IDLE_ANGLE, 0);
@@ -40,7 +42,7 @@ const rightThumbIdleRotation = getQuaternionFromAngle(0, -THUMB_IDLE_ANGLE, 0);
 const rightShoulderBreathRotation = getQuaternionFromAngle(0, 0, -SHOULDER_BREATH_ANGLE);
 const righArmBreathRotation = getQuaternionFromAngle(0, 0, SHOULDER_BREATH_ANGLE - ARM_IDLE_ANGLE);
 
-const idlePose = new Map<BoneNames, Quaternion>([
+const idlePose = new Map<VRMSchema.HumanoidBoneName, Quaternion>([
   [BoneNames.LeftShoulder, new Quaternion()],
   [BoneNames.LeftUpperArm, leftArmIdleRotation],
   [BoneNames.LeftIndexDistal, leftFingerIdleRotation],
@@ -56,7 +58,7 @@ const idlePose = new Map<BoneNames, Quaternion>([
   [BoneNames.LeftRingIntermediate, leftFingerIdleRotation],
   [BoneNames.LeftRingProximal, leftFingerIdleRotation],
   [BoneNames.LeftThumbDistal, leftThumbIdleRotation],
-  [BoneNames.LeftThumbMetacarpal, leftThumbIdleRotation],
+  [BoneNames.LeftThumbIntermediate, leftThumbIdleRotation],
   [BoneNames.LeftThumbProximal, leftFingerIdleRotation],
   [BoneNames.RightShoulder, new Quaternion()],
   [BoneNames.RightUpperArm, righArmIdleRotation],
@@ -73,10 +75,10 @@ const idlePose = new Map<BoneNames, Quaternion>([
   [BoneNames.RightRingIntermediate, rightFingerIdleRotation],
   [BoneNames.RightRingProximal, rightFingerIdleRotation],
   [BoneNames.RightThumbDistal, rightThumbIdleRotation],
-  [BoneNames.RightThumbMetacarpal, rightThumbIdleRotation],
+  [BoneNames.RightThumbIntermediate, rightThumbIdleRotation],
   [BoneNames.RightThumbProximal, rightFingerIdleRotation],
 ]);
-const breathPose = new Map<BoneNames, Quaternion>([
+const breathPose = new Map<VRMSchema.HumanoidBoneName, Quaternion>([
   [BoneNames.LeftShoulder, leftShoulderBreathRotation],
   [BoneNames.LeftUpperArm, leftArmBreathRotation],
   [BoneNames.RightShoulder, rightShoulderBreathRotation],
@@ -110,43 +112,43 @@ export function updateModel(model: VRM, deltaTime: number) {
 }
 
 function updateHead(model: VRM, deltaTime: number) {
-  const bone = model.firstPerson?.humanoid.getNormalizedBoneNode(BoneNames.Head);
-  if (bone) {
-    matrix.lookAt(
-      bone.getWorldPosition(position),
-      camera.getWorldPosition(position2),
-      vector3.set(0, 1, 0),
-    );
-    vector3.set(0, 0, 1).applyMatrix4(matrix);
-    if (vector3.z < 0)
-      euler.setFromRotationMatrix(matrix).set(
-        clampByRadian(-euler.x, -HEAD_CLAMP_ANGLE, HEAD_CLAMP_ANGLE),
-        clampByRadian(Math.PI + euler.y, -HEAD_CLAMP_ANGLE, HEAD_CLAMP_ANGLE) + Math.PI,
-        clampByRadian(euler.z, -HEAD_CLAMP_ANGLE, HEAD_CLAMP_ANGLE),
-      );
-    else
-      euler.set(0, Math.PI, 0);
-    bone.quaternion.slerp(
-      rotation.setFromEuler(euler).multiply(
-        rotation3.setFromRotationMatrix(bone.parent?.matrixWorld || matrix.identity()),
+  const bone = model.firstPerson?.firstPersonBone;
+  if (!bone) return;
+  bone.matrixWorld.decompose(position, rotation, vector3);
+  position2.setFromMatrixPosition(camera.matrixWorld);
+  matrix.lookAt(position, position2, vector3.set(0, 1, 0));
+  vector3.set(0, 0, 1).applyMatrix4(matrix);
+  bone.applyQuaternion(
+    rotation2.copy(rotation).slerp(
+      vector3.z < 0 ? rotation3.identity() : rotation3.setFromEuler(
+        euler.setFromRotationMatrix(matrix).set(
+          clampByRadian(euler.x, -HEAD_CLAMP_ANGLE, HEAD_CLAMP_ANGLE),
+          clampByRadian(euler.y, -HEAD_CLAMP_ANGLE, HEAD_CLAMP_ANGLE),
+          clampByRadian(euler.z, -HEAD_CLAMP_ANGLE, HEAD_CLAMP_ANGLE),
+        ),
       ),
+      //Math.min(MathUtils.damp(0, 0, 0, 0), 0),
       Math.min(MathUtils.damp(0, 1, HEAD_ROTATE_DAMP, deltaTime * LERP_SCALE), 1),
-    );
-  }
+    ).multiply(
+      rotation3.setFromRotationMatrix(bone.matrix),
+    ).multiply(
+      rotation3.copy(rotation).invert(),
+    ),
+  );
 }
 
 function updateEyeBlink(model: VRM, deltaTime: number) {
-  if (!model.expressionManager) return;
-  let v = blinkDelays.get(model);
-  if (v == null || v < -BLINK_DURATION)
-    v = MathUtils.randFloat(MIN_BLINK_DELAY, MAX_BLINK_DEALY);
-  else
-    v -= deltaTime;
-  blinkDelays.set(model, v);
-  model.expressionManager.setValue(
-    VRMExpressionPresetName.Blink,
-    v > LOOK_CAMERA_THRESHOLD ? 0 : MathUtils.pingpong(-v, BLINK_DURATION / 2) * 2 / BLINK_DURATION,
-  );
+	//if (!model.blendShapeProxy) return;
+	//let v = blinkDelays.get(model);
+	//if (v == null || v < -BLINK_DURATION)
+	//  v = MathUtils.randFloat(MIN_BLINK_DELAY, MAX_BLINK_DEALY);
+	//else
+	//  v -= deltaTime;
+	//blinkDelays.set(model, v);
+	//model.blendShapeProxy.setValue(
+	//  VRMSchema.BlendShapePresetName.Blink,
+	//  v > LOOK_CAMERA_THRESHOLD ? 0 : MathUtils.pingpong(-v, BLINK_DURATION / 2) * 2 / BLINK_DURATION,
+	//);
 }
 
 function updateIdlePose(model: VRM, deltaTime: number) {
@@ -154,7 +156,7 @@ function updateIdlePose(model: VRM, deltaTime: number) {
   const totalTime = (totalTimes.get(model) || 0) + deltaTime;
   totalTimes.set(model, totalTime);
   for (const [bone, rotation] of idlePose) {
-    const node = model.humanoid.getNormalizedBoneNode(bone);
+    const node = model.humanoid.getBoneNode(bone);
     let finalRotation = rotation;
     const breathRotation = breathPose.get(bone);
     if (breathRotation)
@@ -164,7 +166,7 @@ function updateIdlePose(model: VRM, deltaTime: number) {
     if (node) node.setRotationFromQuaternion(
       rotation3
       .setFromRotationMatrix(node.matrix)
-      .slerp(finalRotation, Math.min(deltaTime * LERP_SCALE, 1)),
+      //.slerp(finalRotation, Math.min(deltaTime * LERP_SCALE, 1)),
     );
   }
 }

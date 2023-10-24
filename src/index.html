@@ -1,69 +1,31 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
-    <title>VRM Dance Player</title>
-  </head>
-  <body>
-    <noscript>JavaScript is required to view this page</noscript>
-    <div class="ts-app-layout is-vertical is-full">
-      <div class="cell is-fluid" id="canvas-container"></div>
-      <div class="cell is-horizontal">
-        <div class="cell">
-          <div class="ts-content">
-            <div class="ts-app-navbar is-unlabeled is-fluid">
-              <button class="item" id="open" data-tooltip-lang="open"><span class="ts-icon is-folder-open-icon"></span><span class="label"></span></button>
-              <button class="item" id="info" data-tooltip-lang="info"><span class="ts-icon is-circle-info-icon"></span><span class="label"></span></button>
-              <button class="item" id="lights" data-tooltip-lang="lights"><span class="ts-icon is-lightbulb-icon"></span><span class="label"></span></button>
-              <button class="item" id="bloom" data-tooltip-lang="bloom"><span class="ts-icon is-sun-icon"></span><span class="label"></span></button>
-              <button class="item" id="rotate" data-tooltip-lang="rotate"><span class="ts-icon is-repeat-icon"></span><span class="label"></span></button>
-            </div>
-          </div>
-        </div>
-        <div class="cell is-fluid is-maximal-only">
-          <div class="ts-content">
-            <span class="ts-text credits" data-lang="hint"></span>
-          </div>
-        </div>
-        <div class="cell">
-          <div class="ts-content">
-            <span data-tooltip-lang="fps" data-tooltip-position="top right">
-              F:<span class="number n5-digits" id="fps"></span>
-            </span>
-            &nbsp;
-            <span data-tooltip-lang="draw-call" data-tooltip-position="top right">
-              D:<span class="number n4-digits" id="draw-call"></span>
-            </span>
-            &nbsp;
-            <span data-tooltip-lang="face-count" data-tooltip-position="top right">
-              T:<span class="number n7-digits" id="face-count"></span>
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-    <form class="hidden">
-      <input type="file" id="selectfile" tabindex="-1" multiple accept=".vrm,.vmd,.bvh" />
-    </form>
-    <div class="ts-modal is-big" id="dialogmodal">
-      <div class="content">
-        <div class="ts-content is-dense">
-          <div class="ts-row">
-            <div class="column is-fluid">
-              <div class="ts-header header"></div>
-            </div>
-            <div class="column">
-              <button class="ts-close" id="closeinfo"></button>
-            </div>
-          </div>
-        </div>
-        <div class="ts-divider"></div>
-        <div class="ts-content content-holder"></div>
-      </div>
-    </div>
-    <div class="ts dimmer" id="loading">
-      <div class="ts big loader"></div>
-    </div>
-  </body>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<title>ai</title>
+		<link rel="icon" href="/favicon.ico"/>
+		<link rel="stylesheet" href="https://syui.ai/bower_components/icomoon/css/icomoon.css" />
+		<link rel="stylesheet" href="https://syui.ai/bower_components/font-awesome/css/all.min.css" />
+		<!--
+		<script src="https://aframe.io/releases/latest/aframe.min.js"></script>
+		-->
+	</head>
+	<body>
+		<noscript>JavaScript is required to view this page</noscript>
+		<div class="ts modals dimmer">
+		</div>
+		<div class="ts dimmer" id="loading">
+			<div class="ts big loader"></div>
+		</div>
+		<div id="menu" style="display:none"></div>
+		<div class="cell">
+			<div class="ts-content">
+				<div class="ts-app-navbar is-unlabeled is-fluid">
+					<button id='btn-models_d' value="normal"><span class="icon-ai"></span></button>
+					<button id='btn-light'><span class="icon-moon"/></button>
+				</div>
+			</div>
+		</div>
+	</body>
 </html>

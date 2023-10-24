@@ -1,4 +1,4 @@
-import { fromEvent, Observable } from 'rxjs';
+import { fromEvent } from 'rxjs';
 import {
   Callback,
   Collection,
@@ -100,10 +100,10 @@ export abstract class MessageServiceBase {
   }
 
   public observe<T = any>(message: string) {
-    return fromEvent(
+    return fromEvent<T>(
       getOrCreate(wrapperCache, this, EventEmitterWrapper, this),
       message,
-    ) as Observable<T>;
+    );
   }
 
   public dispose() {

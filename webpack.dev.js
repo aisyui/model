@@ -9,12 +9,23 @@ module.exports = merge(common, {
 
   //https://webpack.js.org/configuration/dev-server/
   devServer: {
-    contentBase: path.join(__dirname, 'dist'),
+			//useLocalIp: true,
+			host: "0.0.0.0",
+			contentBase: path.join(__dirname, 'dist'),
     compress: true,
     port: 8080,
-  },
-
-  module: {
+			proxy: {
+				'/api/users/': {
+					target: 'https://api.syui.ai/users/',
+					secure: false,
+					changeOrigin: true,
+					pathRewrite: {
+						'^/api/users' : ''
+					}
+				}
+			}
+		},
+	module: {
     rules: [{
       enforce: 'pre',
       test: /\.js$/,

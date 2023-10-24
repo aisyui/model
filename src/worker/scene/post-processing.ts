@@ -2,7 +2,7 @@ import { Vector2 } from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
-import { WorkerMessageService } from '../worker-message-service-shim';
+import { WorkerMessageService } from '../../utils/message-service';
 
 import { renderer } from './renderer';
 import { camera } from './camera';

@@ -1,6 +1,6 @@
 import { Subject } from 'rxjs';
-// import { take } from 'rxjs/operators';
-// import { initWorkerContext, remoteCanvasObservable } from '../../utils/remote-canvas';
+import { take } from 'rxjs/operators';
+import { initWorkerContext, remoteCanvasObservable } from '../../utils/remote-canvas';
 import { camera } from './camera';
 import { init as initLights } from './lights';
 import { init as initRenderer } from './renderer';
@@ -8,8 +8,9 @@ import { updateSize, init as initPostProcessing, render } from './post-processin
 import { init as initControls, controls, targetPosition, enableOrbit, enableXR } from './controls';
 import { setCenter } from './floor';
 import { WebGLRenderer } from 'three';
-import { WorkerMessageService } from '../worker-message-service-shim';
+import { WorkerMessageService } from '../../utils/message-service';
 import { LoopManager } from '../../utils/loop-manager';
+//import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
 
 export const deltaTimeObservable = new Subject<number>();
 let frameCount = 0;
@@ -25,15 +26,18 @@ const loopManager = new LoopManager(deltaTime => {
 
 initLights(deltaTimeObservable);
 
-export function init(canvas: HTMLCanvasElement) {
-  const renderer = initRenderer(canvas);
-  const controls = initControls(canvas, deltaTimeObservable, true);
+remoteCanvasObservable.pipe(take(1)).subscribe(canvas => {
+  if(typeof self !== 'undefined' && self.document == null)
+    (self as any).document = {};
+  const renderer = initRenderer(canvas.undelyOffscreenCanvas);
+		const controls = initControls(canvas, deltaTimeObservable, true);
   initPostProcessing();
   handleResize(canvas.width, canvas.height);
   deltaTimeObservable.subscribe(() => setCenter(controls.target));
   renderer.info.autoReset = false;
   setInterval(notifyRendererStats, 1000, renderer);
-}
+});
+initWorkerContext();
 
 export function handleResize(width: number, height: number) {
   updateSize(width, height);
@@ -95,5 +99,5 @@ WorkerMessageService.host.on({
   setCameraX, setCameraY, setCameraZ,
   setTargetX, setTargetY, setTargetZ,
   enableControls, enableXR,
-  initAll: init,
 });
+

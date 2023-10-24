@@ -1,18 +1,52 @@
-# VRM Dance Player
+## support three-vrm v0.6
 
-This is a tiny project that makes preview of VRM models. VRM is a [3D avatar file format for VR](https://vrm.dev/en/), which is for handling 3D humanoid character/avatar data cross platform.
+When using three-vrm `v1.0` or higher, the model does not display well.
 
-This project uses [three.js](https://threejs.org/), [three-VRM](https://github.com/pixiv/three-vrm) and some custom code for converting and handling [MikuMikuDance VMD motion data](https://mikumikudance.fandom.com/wiki/VMD_file_format). The base of this project uses [this template by Johannes Bauer](https://github.com/Joh4nnesB/threejs-typescript-webpack).
+- npm : v16
 
-To use this project, just head into [this size](https://moka-rin.moe/vrm-viewer/) and drop your VRM and VMD files to the scene and that's it!
+- vrm : v0.6
 
-There also has a experimental handler for [Biovision Hierarchy (BVH) motion capture files](https://en.wikipedia.org/wiki/Biovision_Hierarchy), you may try to load them like the VMD files but it is not guarantee to work ~~(in most cases, all joints will messed up)~~.
+```sh
+$ git clone https://github.com/aisyui/model
+$ cd model
+$ git checkout deploy
+$ nvm use 16
+$ yarn install
+$ yarn dev
+```
 
-# Screenshots
+### fix t-pose
 
-![Screenshot](preview/preview.png)
-*The character in this screenshot is not included. [Original reference](https://hub.vroid.com/characters/4744669501802908201/models/2299592336090647140)
+Fixed setting to lower hands from T-pose. This affects the pose when loading the model.
 
-# License
+> src/worker/vrm-idle-helper.ts
 
-[MIT](LICENSE)
+```js
+function updateIdlePose(model: VRM, deltaTime: number) {
+  if (!model.humanoid) return;
+  const totalTime = (totalTimes.get(model) || 0) + deltaTime;
+  totalTimes.set(model, totalTime);
+  for (const [bone, rotation] of idlePose) {
+    const node = model.humanoid.getBoneNode(bone);
+    let finalRotation = rotation;
+    const breathRotation = breathPose.get(bone);
+    if (breathRotation)
+      finalRotation = rotation2
+      .copy(rotation)
+      .slerp(breathRotation, MathUtils.pingpong(totalTime, BREATH_CYCLE));
+    if (node) node.setRotationFromQuaternion(
+      rotation3
+      .setFromRotationMatrix(node.matrix)
+      //.slerp(finalRotation, Math.min(deltaTime * LERP_SCALE, 1)),
+    );
+  }
+}
+```
+
+### remove blink
+
+`updateEyeBlink` : If the position of the face changes, the entire face will be out of alignment.
+
+```js
+// model.blendShapeProxy.setValue('blink', 1);
+```

@@ -1,0 +1,36 @@
+name: github pages
+
+on:
+  push:
+    branches:
+    - deploy
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-node@v1
+      with:
+        node-version: 16
+        ref: main
+        submodules: true
+        fetch-depth: 0
+    - run: yarn install
+
+    - name: Build
+      env: 
+        TZ: "Asia/Tokyo"
+      run: |
+           yarn build
+           cp -rf CNAME ./public/
+           cp -rf dist/* ./public/
+
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./public
+        user_name: 'ai[bot]'
+        user_email: '138105980+yui-syui-ai[bot]@users.noreply.github.com'

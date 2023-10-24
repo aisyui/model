@@ -1,9 +1,9 @@
-import { Object3D, MathUtils, Quaternion, Vector3, Bone } from 'three';
-import { VRM, VRMHumanBoneName } from '@pixiv/three-vrm';
+import { Object3D, MathUtils, Quaternion, Vector3, Euler, Bone } from 'three';
+import { VRM, VRMSchema } from '@pixiv/three-vrm';
 import { clampVector3ByRadian } from '../utils/three-helpers';
 
-const BoneNames = VRMHumanBoneName;
-const boneNameOrder: VRMHumanBoneName[] = [
+const BoneNames = VRMSchema.HumanoidBoneName;
+const boneNameOrder: VRMSchema.HumanoidBoneName[] = [
   BoneNames.Chest,
   BoneNames.Head,
   BoneNames.Hips,
@@ -27,7 +27,7 @@ const boneNameOrder: VRMHumanBoneName[] = [
   BoneNames.LeftRingProximal,
   BoneNames.LeftShoulder,
   BoneNames.LeftThumbDistal,
-  BoneNames.LeftThumbMetacarpal,
+  BoneNames.LeftThumbIntermediate,
   BoneNames.LeftThumbProximal,
   BoneNames.LeftToes,
   BoneNames.LeftUpperArm,
@@ -52,7 +52,7 @@ const boneNameOrder: VRMHumanBoneName[] = [
   BoneNames.RightRingProximal,
   BoneNames.RightShoulder,
   BoneNames.RightThumbDistal,
-  BoneNames.RightThumbMetacarpal,
+  BoneNames.RightThumbIntermediate,
   BoneNames.RightThumbProximal,
   BoneNames.RightToes,
   BoneNames.RightUpperArm,
@@ -60,7 +60,7 @@ const boneNameOrder: VRMHumanBoneName[] = [
   BoneNames.Spine,
   BoneNames.UpperChest,
 ];
-const boneMap = new Map<VRMHumanBoneName, number>(
+const boneMap = new Map<VRMSchema.HumanoidBoneName, number>(
   boneNameOrder.map((b, i) => [b, i])
 );
 
@@ -169,11 +169,11 @@ export default class VRMIKHandler {
     });
   }
 
-  getAndEnableIK(boneName: VRMHumanBoneName) {
+  getAndEnableIK(boneName: VRMSchema.HumanoidBoneName) {
     return this.getTarget(boneName, true);
   }
 
-  getTarget(boneName: VRMHumanBoneName, enable?: boolean) {
+  getTarget(boneName: VRMSchema.HumanoidBoneName, enable?: boolean) {
     const boneIndex = boneMap.get(boneName);
     if (boneIndex == null) return;
     let target = this.targets.get(boneIndex);

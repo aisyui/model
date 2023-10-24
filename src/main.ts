@@ -1,12 +1,11 @@
 import './main.css';
 import './i18n';
-import './worker';
-import { firstValueFrom } from 'rxjs';
 import { ajax } from 'rxjs/ajax';
-import { canvas, loadAnimation, loadModel, toggleAutoRotate, toggleBloom, toggleLights } from './host';
-import { hideInfo, setAutoShown, showMoreInfo } from './host/meta-display';
+import { canvas, loadAnimation, loadModel, toggleAutoRotate, toggleBloom, toggleLights, toggleTick, toggleTickSky, toggleTickSkySword, toggleTickTen, toggleFloorGrid, toggleFloorY, toggleTel } from './host';
+import { setAutoShown, showMoreInfo } from './host/meta-display';
 import registerStats from './host/status';
 import { registerDropZone } from './utils/drag-drop';
+import { showSnack } from './utils/tocas-helpers';
 import { observeMediaQuery } from './utils/rx-helpers';
 import { interceptEvent, isInFrame } from './utils/helper-functions';
 import workerService from './host/worker-service';
@@ -64,64 +63,36 @@ function errorToSnackBar(error?: any) {
   let message: string | undefined;
   if (typeof error?.message === 'string')
     message = error.message;
-  // if (message) showSnack(message);
+  if (message) showSnack(message);
 }
 
 const searchParams = new URLSearchParams(location.search);
 
-if (isInFrame())
-  searchParams.set('nostats', '');
-else
-  registerDropZone(canvas, data => onFileSelected(data.files));
-
-if (searchParams.has('nostats'))
-  for (const element of document.querySelectorAll('.credits, .stats'))
-    element.remove();
-else
-  registerStats(
-    document.getElementById('fps')!,
-    document.getElementById('draw-call')!,
-    document.getElementById('face-count')!,
-  );
-
-if (searchParams.has('notoolbar'))
-  document.querySelector('.menu')?.classList.add('hidden');
-
-if (searchParams.has('norotate'))
-  toggleAutoRotate();
-
-if (searchParams.has('dark'))
-  toggleLights();
-
-if (searchParams.has('noinfo'))
-  setAutoShown(false);
-
-if (searchParams.has('nobloom'))
-  toggleBloom();
-
 const vrmUrl = searchParams.get('vrm');
 if (vrmUrl)
   loadingPromises.push((async () => {
-    const { response } = await firstValueFrom(ajax<Blob>({
+    const { response } = await ajax({
       url: vrmUrl,
       responseType: 'blob',
-    }));
+    }).toPromise();
     return loadModel(response);
   })());
 
 const animUrl = searchParams.get('anim');
 if (animUrl)
   loadingPromises.push((async () => {
-    const { response } = await firstValueFrom(ajax<Blob>({
+    const { response } = await ajax({
       url: animUrl,
       responseType: 'blob',
-    }));
+    }).toPromise();
     let animType = searchParams.get('animtype');
     if (!animType) {
       if (animUrl.endsWith('.vmd'))
         animType = 'vmd';
       else if (animUrl.endsWith('.bvh'))
         animType = 'bvh';
+      else if (animUrl.endsWith('.vrma'))
+        animType = 'vrma';
       else
         animType = 'vmd';
     }
@@ -141,33 +112,65 @@ if (targetY) workerService.trigger('setTargetY', Number(targetY));
 const targetZ = searchParams.get('tz');
 if (targetZ) workerService.trigger('setTargetZ', Number(targetZ));
 
-if (searchParams.has('nocontrols'))
-  workerService.trigger('enableControls', false);
+let api_url_local = "https://api.syui.ai/users/"
+let url = new URL(window.location.href);
+const params = new URLSearchParams(window.location.search);
 
-document.querySelector('#lights')?.addEventListener('click', toggleLights);
-document.querySelector('#bloom')?.addEventListener('click', toggleBloom);
-document.querySelector('#rotate')?.addEventListener('click', toggleAutoRotate);
-const fileSelect = document.querySelector<HTMLInputElement>('#selectfile');
-document.querySelector('#open')?.addEventListener('click', () => fileSelect?.click());
-fileSelect?.addEventListener('change', e => {
-  const fileSelect = e.target as HTMLInputElement;
-  if (fileSelect.files?.length) onFileSelected(fileSelect.files);
-  fileSelect.form?.reset();
-  fileSelect.blur();
-});
-document.querySelector('#info')?.addEventListener('click', showMoreInfo);
-document.querySelector('#closeinfo')?.addEventListener('click', hideInfo);
+let date = new Date();
+var num_h =	date.getHours();
+var model_url = "https://vrm.syui.ai/vrma/model/ai.vrm"
 
-observeMediaQuery('(prefers-color-scheme:dark)').subscribe(matches =>
-  document.querySelectorAll('.ts:not(.dimmer)').forEach(element =>
-    element.classList[matches ? 'add' : 'remove']('inverted'),
-  ),
-);
+import axios, {isCancel, AxiosError} from 'axios';
+function model_load(){
+	axios.get(model_url, {
+		responseType: "blob"
+	})
+	.then(response => {
+		loadingPromises.push(loadModel(response.data));
+		hasLoadModel = true;
+  triggerLoading();
+		const blob = new Blob([response.data], {
+			type: response.data.type
+		});
+	})
+}
+if (model_url !== null) {
+	model_load();
+}
 
-self.addEventListener('dragover', e => {
-  interceptEvent(e);
-  if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
-});
-self.addEventListener('drop', interceptEvent);
+import * as THREE from 'three';
+export const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+const listener = new THREE.AudioListener();
+camera.add( listener );
+const sound = new THREE.Audio( listener );
+const audioLoader = new THREE.AudioLoader();
+
+function getModels(a?:string){
+	axios.get(model_url, {
+		responseType: "blob"
+	})
+	.then(response => {
+		loadingPromises.push(loadModel(response.data));
+		hasLoadModel = true;
+		triggerLoading();
+		const blob = new Blob([response.data], {
+			type: response.data.type
+		});
+	})
+}
+
+function getMenus() {
+		var x = document.querySelector('#menu') as HTMLInputElement | null;
+		if (x != null) {
+			if (x.style.display === "none") {
+				x.style.display = "block";
+			} else {
+				x.style.display = "none";
+			}
+		}
+}
+
+//背景のキラキラ(モバイルでは重い)
+//toggleTick();
 
 if (loadingPromises.length) triggerLoading();
